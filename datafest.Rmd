@@ -1,0 +1,944 @@
+---
+title: "DATAFEST"
+author: "Daniel Wang"
+date: "2024-04-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+library(readr)
+responses <- read_csv("Random Sample of Data Files/responses.csv")
+
+head(responses)
+
+```
+
+THe data basically has every student's response for every question
+
+
+```{r}
+colnames(responses)
+```
+
+
+```{r}
+clean <- responses %>% select(c("student_id", "institution_id", "class_id", "book", "chapter", "page", "item_type", "chapter_number", "section_number", "response", "prompt", "points_possible", "points_earned", "attempt"))
+```
+
+
+
+
+```{r}
+average_attempts <- clean %>%
+  group_by(item_type) %>%
+  summarize(average_attempts = mean(attempt), average_score = mean(points_earned))
+
+
+average_attempts
+```
+
+
+```{r}
+average_attempts <- clean %>%
+  group_by(page) %>%
+  summarize(average_attempts = mean(attempt), average_score = mean(points_earned))
+
+
+average_attempts
+```
+
+
+
+```{r}
+checkpoints_pulse <- read_csv("Random Sample of Data Files/checkpoints_pulse.csv")
+
+
+checkpoints_pulse
+```
+
+
+
+```{r}
+pulse <- checkpoints_pulse %>% select(c("institution_id", "student_id", "class_id", "chapter_number", "construct", "response"))
+```
+
+
+```{r}
+df <- clean %>% full_join(pulse, by = c("institution_id", "student_id", "class_id", "chapter_number"))
+
+```
+
+```{r}
+checkpoints_eoc <- read_csv("Random Sample of Data Files/checkpoints_eoc.csv")
+checkpoints_eoc
+```
+
+
+
+```{r}
+page_views <- read_csv("Random Sample of Data Files/page_views.csv")
+page_views
+```
+
+
+```{r}
+colnames(page_views)
+```
+
+```{r}
+engaged <- page_views %>% select(c("book", "chapter_number", "class_id", "student_id", "engaged"))
+```
+
+
+```{r}
+page_views %>% mutate(idle = idle_brief+idle_long) %>% mutate(ratio = engaged/idle) %>% select("idle", "engaged", "ratio")
+```
+
+
+```{r}
+page_views %>% select(c("book", "chapter_number", "class_id", "student_id", "engaged", "idle"))
+```
+
+
+
+```{r}
+eoc <- checkpoints_eoc %>% select(c("student_id", "class_id", "chapter_number", "book", "EOC"))
+```
+
+
+```{r}
+data <- full_join(engaged, eoc, by = c("book", "chapter_number", "class_id", "student_id"))
+```
+
+
+```{r}
+regout <- lm(EOC ~ engaged, data = data)
+summary(regout)
+```
+
+
+
+```{r}
+engaged
+```
+
+```{r}
+eoc
+```
+
+
+
+```{r}
+media_views <- read_csv("Random Sample of Data Files/media_views.csv")
+
+media_views
+
+```
+
+
+# Mingyang's idea
+```{r}
+engaged_time_df <- page_views %>% mutate(engaged_time = engaged / (engaged+idle_brief+idle_long+off_page_brief+off_page_long))
+```
+
+```{r}
+engaged_time_df
+```
+
+
+```{r}
+engaged_time_df
+```
+
+
+```{r}
+engagement <- engaged_time_df %>% filter(book == "College / Statistics and Data Science (ABC)") %>% group_by(page) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE)) %>% arrange(desc(avg_engagement))
+
+engagement
+```
+16.2, 16.7, 16.6, 16.4, 1.4, 4.12, 4.14, 4.7, 13.6, 2.5, 1.7
+
+8.4, 12.1, 9.1, 6.1, 4.2, 5.5
+
+
+```{r}
+write.csv(engagement, file = "engagement.csv", row.names = FALSE)
+
+```
+
+
+# Chapter average engagement time, average scores
+```{r}
+engaged_time_df %>% group_by(chapter) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE)) %>% arrange(avg_engagement)
+```
+
+Low engagement: 12,13,11,8,10,3,5,6,9,7,2,4,15,13,14,1,16
+
+
+
+
+```{r}
+checkpoints_eoc %>% group_by(chapter_number) %>% summarize(avg_eoc = mean(EOC, na.rm = TRUE)) %>% arrange(avg_eoc)
+```
+
+Low engagement: 12,13,11,8,10,3,5,6,9,7,2,4,15,13,14,1,16
+Low scores: 16,14,11,15,13,12,10,9,7,8,6,4,5,3,2,1
+
+
+```{r}
+checkpoints_pulse %>% filter(chapter_number == 12)
+```
+
+
+
+```{r}
+construct_scores <- checkpoints_pulse %>%
+  group_by(chapter_number, construct) %>%
+  summarize(avg_response = mean(response, na.rm = TRUE))
+
+construct_scores
+```
+
+
+
+
+```{r}
+construct_scores %>% filter(construct == "Cost") %>% arrange(avg_response)
+construct_scores %>% filter(construct == "Expectancy") %>% arrange(avg_response)
+construct_scores %>% filter(construct == "Intrinsic Value") %>% arrange(avg_response)
+construct_scores %>% filter(construct == "Utility Value") %>% arrange(avg_response)
+
+
+
+```
+
+
+
+```{r}
+engaged_time_df %>% group_by(page) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE))
+```
+
+```{r}
+items %>% group_by(page) %>% count(lrn_template_name) %>% arrange(page)
+
+```
+
+```{r}
+items %>% group_by(page) %>% count(page) %>% arrange(page)
+
+```
+
+```{r}
+# test
+responses %>% filter(page == "1.4 Introduction to R Functions")
+```
+```{r}
+responses
+```
+
+
+```{r}
+item_type <- responses %>% group_by(page, item_id) %>% count(item_type)
+
+item_type
+```
+
+```{r}
+engagement
+```
+
+
+```{r}
+merge(engagement, item_type, by = "page")
+```
+
+
+
+```{r}
+responses
+```
+
+
+# Day 2
+```{r}
+library(tidyverse)
+
+# Read responses.csv
+original_df <- read_csv('/Users/dwang/Desktop/DATAFEST/Random Sample of Data Files/responses.csv')
+
+# Filter coding data
+coding_df <- original_df %>%
+  filter(item_type == "code", 
+         book == "College / Statistics and Data Science (ABC)", 
+         review_flag == FALSE)
+
+# Count unique item_ids per chapter_number for coding data
+num_coding <- coding_df %>%
+  group_by(chapter_number) %>%
+  summarize(num_item_id = n_distinct(item_id))
+
+# Sort the coding data by number of item_ids in descending order
+sorted_num_coding <- num_coding %>%
+  arrange(desc(num_item_id))
+
+# Filter questions data
+questions_df <- original_df %>%
+  filter(book == "College / Statistics and Data Science (ABC)", 
+         review_flag == FALSE)
+
+# Count unique item_ids per chapter_number for questions data
+num_questions <- questions_df %>%
+  group_by(chapter_number) %>%
+  summarize(num_item_id = n_distinct(item_id))
+
+# Read items.csv
+items_df <- read_csv('/Users/dwang/Desktop/DATAFEST/Random Sample of Data Files/items.csv')
+
+# Filter non-review items data
+non_review_df <- items_df %>%
+  filter(review_flag == FALSE)
+
+# Count unique item_ids per chapter and lrn_type for non-review items data
+chap_summary <- non_review_df %>%
+  group_by(chapter, lrn_type) %>%
+  summarize(num_item_id = n_distinct(item_id))
+```
+```{r}
+chapter_engagement
+```
+
+
+```{r}
+chap_summary
+```
+
+```{r}
+num_coding
+```
+
+
+```{r}
+df <- inner_join(num_coding, num_questions, by = "chapter_number")
+```
+
+```{r}
+df <- df %>% mutate(coding_proportion = num_item_id.x / num_item_id.y)
+```
+
+```{r}
+ordered_coding_proportion <- df %>% select(chapter_number, coding_proportion) %>% arrange(desc(coding_proportion)) %>% filter(chapter_number %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13))
+```
+
+
+```{r}
+chapter_engagement <- engaged_time_df %>% group_by(chapter_number) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE)) %>% arrange(desc(avg_engagement))
+
+chapter_engagement <- chapter_engagement %>% filter(chapter_number %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13))
+
+```
+
+```{r}
+write.csv(chapter_engagement, file = "engagement_by_chapter.csv", row.names = FALSE)
+
+```
+
+
+
+```{r}
+ordered_coding_proportion
+```
+
+
+
+
+```{r}
+engagement_coding <- inner_join(ordered_coding_proportion, chapter_engagement, by = "chapter_number")
+
+engagement_coding
+```
+
+```{r}
+ggplot(engagement_coding, aes(x = coding_proportion, y = avg_engagement)) +
+  geom_point() +
+  labs(x = "Coding Proportion", y = "Average Engagement") +
+  ggtitle("Scatterplot of Coding Proportion vs. Average Engagement")
+
+```
+
+
+```{r}
+regout <- lm(avg_engagement ~ coding_proportion, data = engagement_coding)
+
+summary(regout)
+```
+
+
+```{r}
+num_coding_engagement <- inner_join(num_coding, chapter_engagement, by = "chapter_number")
+
+
+
+ggplot(num_coding_engagement, aes(x = num_item_id, y = avg_engagement)) +
+  geom_point() +
+  labs(x = "Coding Questions", y = "Average Engagement") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Engagement")
+
+```
+
+
+```{r}
+cost_chapter <- construct_scores %>% filter(construct == "Cost") %>% arrange(avg_response)
+expectancy_chapter <- construct_scores %>% filter(construct == "Expectancy") %>% arrange(avg_response)
+intrinsic_chapter <- construct_scores %>% filter(construct == "Intrinsic Value") %>% arrange(avg_response)
+utility_chapter <- construct_scores %>% filter(construct == "Utility Value") %>% arrange(avg_response)
+
+```
+
+
+```{r}
+cost_chapter$chapter_number <- cost_chapter$chapter_number - 1
+expectancy_chapter$chapter_number <- expectancy_chapter$chapter_number - 1
+intrinsic_chapter$chapter_number <- intrinsic_chapter$chapter_number - 1
+utility_chapter$chapter_number <- utility_chapter$chapter_number - 1
+```
+
+
+```{r}
+cost_chapter
+```
+
+
+```{r}
+cost_coding <- inner_join(num_coding, cost_chapter, by = "chapter_number")
+
+ggplot(cost_coding, aes(x = num_item_id, y = avg_response)) +
+  geom_point() +
+  labs(x = "Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+```{r}
+expectancy_coding <- inner_join(num_coding, expectancy_chapter, by = "chapter_number")
+
+ggplot(expectancy_coding, aes(x = num_item_id, y = avg_response)) +
+  geom_point() +
+  labs(x = "Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+```{r}
+intrinsic_coding <- inner_join(num_coding, intrinsic_chapter, by = "chapter_number")
+
+ggplot(intrinsic_coding, aes(x = num_item_id, y = avg_response)) +
+  geom_point() +
+  labs(x = "Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+
+```{r}
+utility_coding <- inner_join(num_coding, utility_chapter, by = "chapter_number")
+
+ggplot(utility_coding, aes(x = num_item_id, y = avg_response)) +
+  geom_point() +
+  labs(x = "Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+
+
+
+
+# proportions
+```{r}
+cost_coding <- inner_join(ordered_coding_proportion, cost_chapter, by = "chapter_number")
+
+ggplot(cost_coding, aes(x = coding_proportion, y = avg_response)) +
+  geom_point() +
+  labs(x = "Proportion Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+```{r}
+expectancy_coding <- inner_join(ordered_coding_proportion, expectancy_chapter, by = "chapter_number")
+
+ggplot(expectancy_coding, aes(x = coding_proportion, y = avg_response)) +
+  geom_point() +
+  labs(x = "Proportion Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+```{r}
+intrinsic_coding <- inner_join(ordered_coding_proportion, intrinsic_chapter, by = "chapter_number")
+
+ggplot(intrinsic_coding, aes(x = coding_proportion, y = avg_response)) +
+  geom_point() +
+  labs(x = "Proportion Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+
+```{r}
+utility_coding <- inner_join(ordered_coding_proportion, utility_chapter, by = "chapter_number")
+
+ggplot(utility_coding, aes(x = coding_proportion, y = avg_response)) +
+  geom_point() +
+  labs(x = "Proportion Coding Questions", y = "Average Response") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response")
+```
+
+
+```{r}
+ordered_coding_proportion <- ordered_coding_proportion %>% filter(chapter_number %in% 2:12)
+
+cost_chapter <- cost_chapter %>% filter(chapter_number %in% 2:12)
+expectancy_chapter <- expectancy_chapter %>% filter(chapter_number %in% 2:12)
+intrinsic_chapter <- intrinsic_chapter %>% filter(chapter_number %in% 2:12)
+utility_chapter <- utility_chapter %>% filter(chapter_number %in% 2:12)
+
+
+```
+
+
+```{r}
+cost_chapter
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Joining data frames and adding a column to identify the source
+cost_coding <- inner_join(ordered_coding_proportion, cost_chapter, by = "chapter_number") %>%
+  mutate(source = "Cost")
+
+expectancy_coding <- inner_join(ordered_coding_proportion, expectancy_chapter, by = "chapter_number") %>%
+  mutate(source = "Expectancy")
+
+intrinsic_coding <- inner_join(ordered_coding_proportion, intrinsic_chapter, by = "chapter_number") %>%
+  mutate(source = "Intrinsic")
+
+utility_coding <- inner_join(ordered_coding_proportion, utility_chapter, by = "chapter_number") %>%
+  mutate(source = "Utility")
+
+# Combining all data frames
+combined_data <- bind_rows(cost_coding, expectancy_coding, intrinsic_coding, utility_coding)
+
+# Creating the scatterplot with facet wrap
+plot <- ggplot(combined_data, aes(x = coding_proportion, y = avg_response, color = source)) +
+  geom_point() +
+  labs(x = "Proportion Coding Questions", y = "Average Response", color = "Source") +
+  ggtitle("Scatterplot of Coding Questions vs. Average Response") +
+  facet_wrap(~ source, scales = "free_y")  # Facet by source with free y-axis scales
+
+# Displaying the plot
+print(plot)
+
+```
+
+
+```{r}
+cost_chapter
+```
+
+
+
+```{r}
+chapter_engagement
+```
+
+```{r}
+# Joining data frames and adding a column to identify the source
+cost_coding <- inner_join(chapter_engagement, cost_chapter, by = "chapter_number") %>%
+  mutate(source = "Cost")
+
+expectancy_coding <- inner_join(chapter_engagement, expectancy_chapter, by = "chapter_number") %>%
+  mutate(source = "Expectancy")
+
+intrinsic_coding <- inner_join(chapter_engagement, intrinsic_chapter, by = "chapter_number") %>%
+  mutate(source = "Intrinsic")
+
+utility_coding <- inner_join(chapter_engagement, utility_chapter, by = "chapter_number") %>%
+  mutate(source = "Utility")
+
+# Combining all data frames
+combined_data <- bind_rows(cost_coding, expectancy_coding, intrinsic_coding, utility_coding)
+
+# Creating the scatterplot with facet wrap
+plot <- ggplot(combined_data, aes(x = avg_engagement, y = avg_response, color = source)) +
+  geom_point() +
+  labs(x = "Avg Engagement", y = "Average Response", color = "Source") +
+  ggtitle("Scatterplot of Avg Engagement vs. Average Response") +
+  facet_wrap(~ source, scales = "free_y")  # Facet by source with free y-axis scales
+
+# Displaying the plot
+print(plot)
+```
+
+
+# Words
+```{r} 
+test_engagement <- chapter_engagement %>% filter(chapter_number %in% 1:13)
+
+words <- data.frame(chapter_number = 1:12, words  = c(7116, 10462, 10298, 11084,  7829, 10099,  5342,  6584,  8377, 9020, 11413, 10068))
+
+words_df <- inner_join(test_engagement, words, by = "chapter_number")
+
+ggplot(words_df, aes(x = words, y = avg_engagement)) + geom_point()
+
+```
+
+```{r}
+questions <- num_questions %>% filter(chapter_number %in% 1:13)
+```
+
+```{r}
+words_pq <- inner_join(words_df, questions, by = "chapter_number") %>% mutate(words_per_question = words/num_item_id)
+
+
+ggplot(words_pq, aes(x = words_per_question, y = avg_engagement)) + geom_point()
+
+```
+
+```{r}
+questions_df
+```
+
+
+```{r}
+# Count unique item_ids per chapter_number for questions data
+num_questions_page <- questions_df %>%
+  group_by(page) %>%
+  summarize(num_item_id = n_distinct(item_id))
+```
+
+```{r}
+num_questions_page
+```
+
+```{r}
+engagement
+```
+
+
+```{r}
+chapter_engagement
+```
+
+
+
+
+```{r}
+engagement_coding %>% arrange(desc(coding_proportion))
+
+
+
+engagement_coding %>% arrange(desc(avg_engagement))
+
+
+
+```
+
+```{r}
+num_coding
+num_questions
+```
+
+```{r}
+cost_coding <- inner_join(chapter_engagement, cost_chapter, by = "chapter_number")
+
+expectancy_coding <- inner_join(chapter_engagement, expectancy_chapter, by = "chapter_number")
+
+intrinsic_coding <- inner_join(chapter_engagement, intrinsic_chapter, by = "chapter_number")
+
+utility_coding <- inner_join(chapter_engagement, utility_chapter, by = "chapter_number")
+
+
+```
+
+
+```{r}
+engagement %>% arrange(page)
+```
+
+
+
+```{r}
+df1 <- inner_join(cost_coding, expectancy_coding, by = c("chapter_number", "avg_engagement"))
+
+df2 <- inner_join(df1, intrinsic_coding, by = c("chapter_number", "avg_engagement"))
+
+df3 <- inner_join(df2, utility_coding, by = c("chapter_number", "avg_engagement"))
+
+df4 <- inner_join(df3, num_coding, by = "chapter_number")
+
+df5 <- inner_join(df4, num_questions, by = "chapter_number")
+
+
+df5 <- df5 %>% mutate(coding_proportion = num_item_id.x / num_item_id.y)
+```
+
+
+
+# big df
+```{r}
+df5 %>% arrange(desc(coding_proportion))
+```
+
+
+```{r}
+chapter_engagement
+```
+
+```{r}
+chap_summary %>% sum(num_item_id)
+```
+
+
+
+```{r}
+questions_per_chapter <- chap_summary %>% group_by(chapter) %>% summarize(questions = sum(num_item_id)) %>% filter(!(chapter %in% c("Final Exam Part I", "Final Exam Part II", "Final Exam Part III", "Midterm 2", "Practice Exam", "Getting Started (Don't Skip This Part)", "Finishing Up (Don't Skip This Part!)", "Midterm 1", "Chapter 1 - Welcome to Statistics: A Modeling Approach")))
+```
+
+
+```{r}
+num_questions
+```
+
+
+```{r}
+mcq_per_chapter <- chap_summary  %>% filter(lrn_type == "mcq") %>% arrange(desc(num_item_id)) %>% filter(!(chapter %in% c("Final Exam Part I", "Final Exam Part II", "Final Exam Part III", "Midterm 2", "Practice Exam", "Getting Started (Don't Skip This Part)")))
+
+
+```
+
+```{r}
+mcq_df
+```
+
+
+```{r}
+mcq_df <- mcq_per_chapter %>% filter(!(chapter %in% c("Chapter 15 - Models with Interactions", "Chapter 13 - Introduction to Multivariate Models", "Chapter 14 - Multivariate Model Comparisons", "Chapter 16 - More Models with Interactions", "Chapter 13 - What You Have Learned")))
+
+test_df <- data.frame(chapter_number = 2:12, chapter = c("Chapter 2 - Understanding Data", "Chapter 3 - Examining Distributions", "Chapter 4 - Explaining Variation", "Chapter 5 - A Simple Model", "Chapter 6 - Quantifying Error", "Chapter 7 - Adding an Explanatory Variable to the Model", "Chapter 8 - Digging Deeper into Group Models", "Chapter 9 - Models with a Quantitative Explanatory Variable", "Chapter 10 - The Logic of Inference", "Chapter 11 - Model Comparison with F", "Chapter 12 - Parameter Estimation and Confidence Intervals"))
+
+df <- inner_join(mcq_df, test_df, by = "chapter")
+```
+
+
+```{r}
+num_questions
+```
+
+
+```{r}
+mcq_ratio_df <- inner_join(df, num_questions, by = c("chapter_number")) %>% mutate(ratio = num_item_id.x / num_item_id.y) %>% select(chapter_number, ratio)
+```
+
+```{r}
+inner_join(mcq_ratio_df, chapter_engagement,  by = "chapter_number") %>% arrange(desc(ratio))
+```
+
+
+
+
+
+
+
+```{r}
+mcq <- inner_join(questions_per_chapter, mcq_per_chapter, by = "chapter")
+```
+
+```{r}
+mcq %>% mutate(mcq_ratio = num_item_id / questions) %>% arrange(desc(mcq_ratio))
+```
+
+```{r}
+num_questions
+```
+
+```{r}
+chapter_engagement
+```
+
+
+
+
+
+```{r}
+df <- inner_join(num_coding, num_questions, by = "chapter_number")
+```
+
+```{r}
+df <- df %>% mutate(coding_proportion = num_item_id.x / num_item_id.y)
+```
+
+```{r}
+ordered_coding_proportion <- df %>% select(chapter_number, coding_proportion) %>% arrange(desc(coding_proportion)) %>% filter(chapter_number %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13))
+```
+
+
+
+
+
+# Media views
+```{r}
+media_views %>% filter(access_count > 1) %>% mutate(time = dt_last_event - dt_started) %>% group_by(media_id) %>% summarise(avg_time = mean(time))
+```
+
+```{r}
+media_views %>% filter(media_id == "379060892") %>% filter(access_count > 1) %>% mutate(time = dt_last_event - dt_started)
+```
+
+
+
+# engagement idea
+
+```{r}
+engaged_time_df <- page_views %>% mutate(engaged_time = engaged / (engaged+idle_brief+idle_long+off_page_brief+off_page_long))
+
+```
+
+```{r}
+engaged_time_df
+```
+
+```{r}
+chapter_engagement2 <- engaged_time_df %>% group_by(chapter_number, section_number) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE)) %>% arrange(desc(avg_engagement))
+
+chapter_engagement2 <- chapter_engagement2 %>% filter(chapter_number %in% c(2:12))
+
+chapter_engagement3 <- chapter_engagement2 %>% filter(chapter_number %in% c(4,5,8))
+
+chapter_engagement4 <- chapter_engagement2 %>% filter(chapter_number %in% c(8,10,11,12))
+```
+
+```{r}
+# Assuming chapter_engagement2 is your data frame
+plot <- ggplot(chapter_engagement3, aes(x = section_number, y = avg_engagement, color = factor(chapter_number))) +
+  geom_line() +
+  labs(x = "Section Number", y = "Engagement", color = "Chapter Number") +
+  ggtitle("Engagement by Section Number, Color-coded by Chapter Number")
+
+# Display the plot
+print(plot)
+```
+
+```{r}
+chapter_engagement2 %>% filter(section_number >= 12)
+chapter_engagement2 %>% arrange(desc(avg_engagement))
+```
+
+
+```{r}
+chapter_engagement4 %>% group_by(chapter_number) %>% summarise(sections = max(section_number)) %>% arrange(sections)
+```
+
+
+
+
+
+```{r}
+plot <- ggplot(chapter_engagement3, aes(x = section_number, y = avg_engagement, color = factor(chapter_number))) +
+  geom_line(size = 1.1) +  # Increase line size for better visibility
+  labs(x = "Section Number", y = "Engagement", color = "Chapter") +
+  ggtitle("Average Student Engagement by Chapter Section") +
+  theme_minimal() +  # Use minimal theme for clean appearance
+  theme(  # Position legend at the bottom
+    legend.title = element_text(size = 12, family = "serif", face = 'bold'),  # Adjust legend title size and font
+    legend.text = element_text(size = 10, family = "serif", face ='bold'),  # Adjust legend text size
+    axis.title = element_text(size = 10, family = "serif", face ='bold'),  # Adjust axis label size
+    axis.text = element_text(size = 10, family = "serif", face='bold'),
+    plot.title = element_text(hjust = 0.5, family = "serif", face='bold'),
+    panel.background = element_rect(fill = "#fff7f2")  # Change background color
+# Adjust axis tick label size
+  ) +   scale_color_manual(values = c('#f5546d', '#0d8dc5', '#e88504'))  # Set custom line colors
+
+
+
+plot
+
+# The chapters with 12+ sections
+
+ggsave("engagement_by_section2.png")
+```
+
+
+
+
+
+
+
+Put a mid-chapter review because there is always a downward spike in the middle of chapters
+We notice that long chapters always have lower accuracy --> there is too much content
+We need a mid 
+
+```{r}
+# Assuming chapter_engagement2 is your data frame
+plot <- ggplot(chapter_engagement4, aes(x = section_number, y = avg_engagement, color = factor(chapter_number))) +
+  geom_line() +
+  labs(x = "Section Number", y = "Engagement", color = "Chapter Number") +
+  ggtitle("Engagement by Section Number, Color-coded by Chapter Number")
+
+# Display the plot
+print(plot)
+```
+
+
+
+
+
+# Full data
+
+# engagement idea
+
+
+
+```{r}
+engaged_time_df <- page_views %>% mutate(engaged_time = engaged / (engaged+idle_brief+idle_long+off_page_brief+off_page_long))
+
+```
+
+```{r}
+chapter_engagement2 <- engaged_time_df %>% group_by(chapter_number, section_number) %>% summarize(avg_engagement = mean(engaged_time, na.rm = TRUE)) %>% arrange(desc(avg_engagement))
+
+chapter_engagement2 <- chapter_engagement2 %>% filter(chapter_number %in% c(2:12))
+
+chapter_engagement3 <- chapter_engagement2 %>% filter(chapter_number %in% c(4,5,8))
+
+chapter_engagement4 <- chapter_engagement2 %>% filter(chapter_number %in% c(8,10,11,12))
+```
+
+## Full
+```{r}
+plot <- ggplot(chapter_engagement3, aes(x = section_number, y = avg_engagement, color = factor(chapter_number))) +
+  geom_line(size = 1.1) +  # Increase line size for better visibility
+  labs(x = "Section Number", y = "Engagement", color = "Chapter") +
+  ggtitle("Average Student Engagement by Chapter Section") +
+  theme_minimal() +  # Use minimal theme for clean appearance
+  theme(  # Position legend at the bottom
+    legend.title = element_text(size = 10),  # Adjust legend title size and font
+    legend.text = element_text(size = 8),  # Adjust legend text size
+    axis.title = element_text(size = 10),  # Adjust axis label size
+    axis.text = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5)# Adjust axis tick label size
+  )
+
+
+plot
+
+# The chapters with 12+ sections
+
+ggsave("engagement_by_section.png")
+```
+
